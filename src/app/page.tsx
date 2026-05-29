@@ -1,66 +1,10 @@
 import Link from 'next/link'
+import { getArticles } from '@/lib/db/articles'
+import { getCourses } from '@/lib/db/courses'
+import { isSupabaseConfigured } from '@/lib/supabase/config'
+import { fallbackArticles, fallbackCourses } from '@/lib/db/fallback-data'
 
-// ======== 示例数据（后期替换为从 Markdown 读取）========
-
-const featuredArticles = [
-  {
-    slug: 'siemens-s7-1200-pid',
-    title: '西门子 S7-1200 PID 控制实战：从参数整定到工程应用',
-    summary: '详解 S7-1200 内置 PID 指令块的使用方法，包含温度控制、流量控制典型案例，手把手完成参数自整定。',
-    category: 'PLC编程',
-    date: '2024-12-15',
-    readTime: '12 分钟',
-    tags: ['S7-1200', 'PID', 'TIA Portal'],
-  },
-  {
-    slug: 'digital-twin-unity',
-    title: '用 Unity 搭建数字孪生工厂：从零到可视化仿真',
-    summary: '从 CAD 模型导入、场景搭建到 OPC UA 数据驱动，完整演示数字孪生产线的构建流程。',
-    category: '数字孪生',
-    date: '2024-12-08',
-    readTime: '18 分钟',
-    tags: ['Unity3D', '数字孪生', 'OPC UA'],
-  },
-  {
-    slug: 'esp32-modbus-iot',
-    title: 'ESP32-S3 + Modbus TCP 实现工业设备数据采集',
-    summary: '基于 ESP32-S3 开发板，实现 Modbus TCP 协议与西门子 PLC 通信，数据上云全流程演示。',
-    category: 'IoT开发',
-    date: '2024-11-28',
-    readTime: '15 分钟',
-    tags: ['ESP32-S3', 'Modbus', 'IoT'],
-  },
-]
-
-const featuredCourses = [
-  {
-    slug: 'plc-s7-1200-complete',
-    title: 'S7-1200 PLC 编程与应用完整课程',
-    description: '从基础梯形图到高级编程，涵盖定时器/计数器/通信/PID，配套25个实验。',
-    level: '初学到进阶',
-    lessons: 42,
-    icon: '🔧',
-    color: 'from-blue-500 to-blue-700',
-  },
-  {
-    slug: 'digital-twin-fundamentals',
-    title: '数字孪生技术基础与实践',
-    description: '理解数字孪生核心概念，动手搭建虚实融合的工厂仿真系统，对接真实设备数据。',
-    level: '中级',
-    lessons: 28,
-    icon: '🏭',
-    color: 'from-emerald-500 to-emerald-700',
-  },
-  {
-    slug: 'ai-mcu-esp32',
-    title: 'AI赋能MCU开发：ESP32-S3 全实战',
-    description: '14个外设模块、43项实验，从传感器采集到边缘AI推理，全程配套硬件套件。',
-    level: '中级',
-    lessons: 35,
-    icon: '🤖',
-    color: 'from-violet-500 to-violet-700',
-  },
-]
+// ======== Module navigation ========
 
 const modules = [
   { href: '/articles',     icon: '📝', label: '技术文章',  desc: 'PLC / 数字孪生 / AI / 数学教育',   color: 'bg-blue-50 text-blue-700 border-blue-100' },
@@ -77,14 +21,21 @@ const categoryColors: Record<string, string> = {
   'IoT开发':  'bg-orange-100 text-orange-700',
 }
 
-// ======== 页面组件 ========
+// ======== Page component ========
 
-export default function HomePage() {
+export default async function HomePage() {
+  const featuredArticles = isSupabaseConfigured()
+    ? await getArticles({ published: true, limit: 3 })
+    : fallbackArticles.filter((a: any) => a.featured)
+
+  const featuredCourses = isSupabaseConfigured()
+    ? await getCourses({ published: true, limit: 3 })
+    : fallbackCourses.slice(0, 3)
+
   return (
     <div>
-      {/* ── Hero ──────────────────────────────────────────── */}
+      {/* -- Hero -- */}
       <section className="relative bg-gradient-to-br from-gray-900 via-primary-950 to-gray-900 text-white overflow-hidden">
-        {/* 背景装饰 */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary-500 rounded-full blur-3xl" />
           <div className="absolute bottom-10 right-10 w-96 h-96 bg-accent-500 rounded-full blur-3xl" />
@@ -92,7 +43,6 @@ export default function HomePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="max-w-3xl">
-            {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm mb-6">
               <span className="w-2 h-2 bg-accent-400 rounded-full animate-pulse" />
               <span>智能制造工程教育平台</span>
@@ -136,7 +86,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 六大模块导航 ──────────────────────────────────── */}
+      {/* -- Module navigation -- */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">探索所有内容</h2>
         <p className="text-gray-500 mb-8">六个专区，覆盖学习、动手、购买、展示全场景</p>
@@ -155,7 +105,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 精选文章 ──────────────────────────────────────── */}
+      {/* -- Featured articles -- */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -178,28 +128,33 @@ export default function HomePage() {
                 <span className={`tag ${categoryColors[article.category] || 'bg-gray-100 text-gray-700'}`}>
                   {article.category}
                 </span>
-                <span className="text-xs text-gray-400">{article.readTime}</span>
+                <span className="text-xs text-gray-400">{article.read_time}</span>
+                {article.is_premium && (
+                  <span className="tag bg-amber-100 text-amber-700">VIP</span>
+                )}
               </div>
               <h3 className="font-semibold text-gray-900 leading-snug mb-3 group-hover:text-primary-700 transition-colors line-clamp-2">
                 {article.title}
               </h3>
               <p className="text-sm text-gray-500 line-clamp-3 leading-relaxed mb-4">
-                {article.summary}
+                {article.excerpt}
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex flex-wrap gap-1">
-                  {article.tags.slice(0, 2).map((t) => (
+                  {article.tags.slice(0, 2).map((t: string) => (
                     <span key={t} className="tag bg-gray-100 text-gray-600">{t}</span>
                   ))}
                 </div>
-                <time className="text-xs text-gray-400">{article.date}</time>
+                <time className="text-xs text-gray-400">
+                  {new Date(article.created_at).toLocaleDateString('zh-CN')}
+                </time>
               </div>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* ── 精选课程 ──────────────────────────────────────── */}
+      {/* -- Featured courses -- */}
       <section className="bg-gray-900 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
@@ -240,7 +195,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 实训平台 Banner ──────────────────────────────── */}
+      {/* -- Lab platform Banner -- */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-gradient-to-r from-primary-600 to-accent-600 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">

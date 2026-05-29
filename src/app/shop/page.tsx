@@ -1,56 +1,18 @@
 import type { Metadata } from 'next'
+import { getProducts } from '@/lib/db/products'
+import { isSupabaseConfigured } from '@/lib/supabase/config'
+import { fallbackProducts } from '@/lib/db/fallback-data'
 
 export const metadata: Metadata = {
   title: 'DIY套件商品',
   description: 'AI-Edge32 Pro、ESP32-S3 等硬件 DIY 套件',
 }
 
-const products = [
-  {
-    id: 'ai-edge32-pro',
-    name: 'AI-Edge32 Pro 实验套件',
-    subtitle: 'ESP32-S3 · 14外设 · 43项实验',
-    price: '¥107',
-    priceNote: '元器件BOM成本',
-    description: '基于 ESP32-S3 的边缘 AI 实验套件，包含 OLED、DHT22、舵机、步进电机、光照传感器等14个外设模块，配套43项实验，覆盖传感器、通信、AI推理全链路。',
-    tags: ['ESP32-S3', 'AI推理', 'Modbus', 'MQTT', 'Arduino'],
-    icon: '🤖',
-    color: 'from-violet-500 to-purple-700',
-    features: ['14个外设模块', '43项动手实验', '配套课程视频', 'KiCad 8工程开源'],
-    buyUrl: '#',
-    status: 'available',
-  },
-  {
-    id: 'plc-learning-kit',
-    name: 'PLC 入门学习套件',
-    subtitle: '模拟量 · 数字量 · Modbus通信',
-    price: '询价',
-    priceNote: '含对应S7-1200模块',
-    description: '配合 S7-1200 PLC 课程的实验套件，包含按钮面板、指示灯模块、模拟量输入输出、Modbus TCP 转换器等，无需购买完整工控系统即可完成90%的课程实验。',
-    tags: ['S7-1200', 'Modbus', '模拟量', '数字量'],
-    icon: '🔧',
-    color: 'from-blue-500 to-blue-700',
-    features: ['适配PLC课程实验', '按钮+指示灯面板', 'Modbus转换器', '接线图附送'],
-    buyUrl: 'mailto:contact@aiitmc.online?subject=PLC学习套件询价',
-    status: 'inquiry',
-  },
-  {
-    id: 'iot-sensor-pack',
-    name: '工业传感器采集包',
-    subtitle: 'RS485 · 温湿度 · 电流 · 振动',
-    price: '询价',
-    priceNote: '',
-    description: '工业级传感器组合包：RS485温湿度传感器 + 交流电流互感器 + 振动传感器 + ESP32网关，可直接接入本站物联网平台，实现工业现场数据采集上云。',
-    tags: ['RS485', 'Modbus RTU', '传感器', 'MQTT'],
-    icon: '📡',
-    color: 'from-orange-500 to-orange-700',
-    features: ['RS485协议', '即插即用', '配套Node-RED流', 'MQTT上云'],
-    buyUrl: 'mailto:contact@aiitmc.online?subject=工业传感器包询价',
-    status: 'inquiry',
-  },
-]
+export default async function ShopPage() {
+  const products = isSupabaseConfigured()
+    ? await getProducts({ published: true })
+    : fallbackProducts
 
-export default function ShopPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
@@ -82,7 +44,7 @@ export default function ShopPage() {
                 <p className="text-gray-600 text-sm leading-relaxed mb-4">{product.description}</p>
 
                 <ul className="space-y-1.5 mb-4">
-                  {product.features.map((f) => (
+                  {product.features.map((f: string) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-gray-700">
                       <span className="text-green-500 text-xs">✓</span>
                       {f}
@@ -91,7 +53,7 @@ export default function ShopPage() {
                 </ul>
 
                 <div className="flex flex-wrap gap-1 mb-5">
-                  {product.tags.map((t) => (
+                  {product.tags.map((t: string) => (
                     <span key={t} className="tag bg-gray-100 text-gray-600 text-xs">{t}</span>
                   ))}
                 </div>
@@ -102,21 +64,21 @@ export default function ShopPage() {
                 <div className="flex items-end justify-between mb-3">
                   <div>
                     <span className="text-2xl font-bold text-gray-900">{product.price}</span>
-                    {product.priceNote && (
-                      <span className="text-xs text-gray-500 ml-1">{product.priceNote}</span>
+                    {product.price_note && (
+                      <span className="text-xs text-gray-500 ml-1">{product.price_note}</span>
                     )}
                   </div>
                 </div>
                 {product.status === 'available' ? (
                   <a
-                    href={product.buyUrl}
+                    href={product.buy_url || '#'}
                     className="block w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 rounded-xl text-center text-sm transition-colors"
                   >
                     查看购买
                   </a>
                 ) : (
                   <a
-                    href={product.buyUrl}
+                    href={product.buy_url || `mailto:contact@aiitmc.online?subject=${product.name}询价`}
                     className="block w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-center text-sm transition-colors"
                   >
                     联系询价

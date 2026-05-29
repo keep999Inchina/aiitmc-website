@@ -1,66 +1,18 @@
 import type { Metadata } from 'next'
+import { getLabItems } from '@/lib/db/labs'
+import { isSupabaseConfigured } from '@/lib/supabase/config'
+import { fallbackLabItems } from '@/lib/db/fallback-data'
 
 export const metadata: Metadata = {
   title: '实训平台展品',
   description: 'DT Station · SmartMFG Lab 智能制造实训平台介绍',
 }
 
-const products = [
-  {
-    id: 'dt-station',
-    name: 'DT-Station Pro',
-    subtitle: '数字孪生实训工作站 · 入门首选',
-    badge: '🏆 讯飞杯参赛项目',
-    badgeColor: 'bg-amber-100 text-amber-700',
-    price: '5–8 万元/套',
-    description: '面向院校的轻量化数字孪生实训工作站。桌面级尺寸，开箱即教，6个核心硬件模块 + 数字孪生软件引擎 + AI智能助教（星火大模型）+ 完整课程包。',
-    icon: '🏭',
-    color: 'from-primary-600 to-primary-800',
-    modules: [
-      { name: 'M1 软PLC控制器', desc: 'Beremiz + IEC 61131-3，无需真实PLC硬件' },
-      { name: 'M2 数字孪生引擎', desc: 'Unity3D 次开发，虚实融合仿真场景' },
-      { name: 'M3 桌面实训台', desc: '传送带/气缸/传感器，真实工业组件' },
-      { name: 'M4 AI智能助教', desc: '星火大模型，故障诊断/编程辅助' },
-      { name: 'M5 IoT监控看板', desc: 'MQTT + Grafana，实时数据可视化' },
-      { name: 'M6 课程资源包', desc: '42节课程视频 + 实验指导书 + PPT' },
-    ],
-    specs: [
-      { label: '占地面积', value: '1.2m × 0.8m（桌面级）' },
-      { label: '电源需求', value: '220V AC，< 500W' },
-      { label: '通信协议', value: 'Modbus TCP / OPC UA / MQTT' },
-      { label: '支持课程', value: '自动化控制 / 数字孪生 / 工业IoT' },
-      { label: '适用年级', value: '大一至大三，可跨专业使用' },
-    ],
-  },
-  {
-    id: 'smart-mfg-lab',
-    name: 'SmartMFG Lab',
-    subtitle: '完整智能制造实训室 · 进阶扩展',
-    badge: '🔭 旗舰产品',
-    badgeColor: 'bg-violet-100 text-violet-700',
-    price: '40–120 万元/套',
-    description: '覆盖智能制造工程全专业课程的完整实训室。由多个 DT-Station 工作站 + 工业机器人 + 机器视觉 + 立体仓储 + 中央控制室组成，支持30人同时实训。',
-    icon: '🏗️',
-    color: 'from-violet-600 to-violet-900',
-    modules: [
-      { name: '多工位 DT-Station', desc: '4–8套工作站，支持联网协作实训' },
-      { name: '工业机器人单元', desc: '六轴协作机器人，ROS2集成' },
-      { name: '机器视觉工作站', desc: '缺陷检测 + 尺寸测量 + AI分类' },
-      { name: '立体仓储系统', desc: '小型ASRS，配套WMS系统' },
-      { name: '中央控制室', desc: 'SCADA + MES + 数字孪生总览' },
-      { name: '全套课程体系', desc: '13门专业课配套，开箱即教' },
-    ],
-    specs: [
-      { label: '占地面积', value: '100–200 m²' },
-      { label: '并发学员', value: '最多30人同时实训' },
-      { label: '交付周期', value: '60–90 天（含安装调试）' },
-      { label: '覆盖课程', value: '13门智能制造核心专业课' },
-      { label: '售后服务', value: '2年保修 + 永久课程更新' },
-    ],
-  },
-]
+export default async function LabsPage() {
+  const products = isSupabaseConfigured()
+    ? await getLabItems({ published: true })
+    : fallbackLabItems
 
-export default function LabsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
@@ -83,9 +35,11 @@ export default function LabsPage() {
               {/* Left: Hero */}
               <div className={`lg:col-span-2 bg-gradient-to-br ${product.color} p-10 flex flex-col justify-between text-white`}>
                 <div>
-                  <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full mb-4 ${product.badgeColor}`}>
-                    {product.badge}
-                  </span>
+                  {product.badge && (
+                    <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full mb-4 ${product.badge_color || 'bg-amber-100 text-amber-700'}`}>
+                      {product.badge}
+                    </span>
+                  )}
                   <h2 className="text-2xl font-bold mb-1">{product.name}</h2>
                   <p className="text-white/70 text-sm mb-4">{product.subtitle}</p>
                   <p className="text-white/80 text-sm leading-relaxed mb-6">{product.description}</p>
@@ -107,7 +61,7 @@ export default function LabsPage() {
                   模块构成
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-7">
-                  {product.modules.map((m) => (
+                  {product.modules.map((m: { name: string; desc: string }) => (
                     <div key={m.name} className="bg-gray-50 rounded-xl p-3.5">
                       <div className="font-medium text-sm text-gray-900 mb-0.5">{m.name}</div>
                       <div className="text-xs text-gray-500">{m.desc}</div>
@@ -122,7 +76,7 @@ export default function LabsPage() {
                 </h3>
                 <table className="w-full text-sm">
                   <tbody>
-                    {product.specs.map((s) => (
+                    {product.specs.map((s: { label: string; value: string }) => (
                       <tr key={s.label} className="border-b border-gray-100 last:border-0">
                         <td className="py-2 text-gray-500 w-1/3">{s.label}</td>
                         <td className="py-2 text-gray-900 font-medium">{s.value}</td>

@@ -1,89 +1,96 @@
-import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { getArticleBySlug } from '@/lib/db/articles'
+import { isSupabaseConfigured } from '@/lib/supabase/config'
+import { fallbackArticles } from '@/lib/db/fallback-data'
+import { getCurrentProfile } from '@/lib/auth/server'
 
-// 文章详情页（后期接入 gray-matter 解析真实 Markdown）
-// 目前使用静态数据作为骨架演示
+type Props = { params: Promise<{ slug: string }> }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string }
-}): Promise<Metadata> {
-  return {
-    title: `文章详情 — ${params.slug}`,
-    description: '智能制造工程技术文章',
-  }
-}
+export default async function ArticleDetailPage({ params }: Props) {
+  const { slug } = await params
 
-// 后期从 Markdown 文件读取真实内容
-const mockArticle = {
-  title: '西门子 S7-1200 PID 控制实战：从参数整定到工程应用',
-  date: '2024-12-15',
-  readTime: '12 分钟',
-  category: 'PLC编程',
-  tags: ['S7-1200', 'PID', 'TIA Portal'],
-  content: `
-PID 控制是工业自动化中最常用的闭环控制算法。S7-1200 内置了高质量的 PID 指令库，
-本文带你从零掌握它——从基本原理到 TIA Portal 中的实际配置，再到参数自整定实战。
+  const article = isSupabaseConfigured()
+    ? await getArticleBySlug(slug)
+    : fallbackArticles.find(a => a.slug === slug)
 
-（完整内容请查看配套课程视频）
-  `,
-}
+  if (!article) notFound()
 
-export default function ArticleDetailPage({
-  params,
-}: {
-  params: { slug: string }
-}) {
+  const profile = await getCurrentProfile()
+  const isVIP = profile?.role === 'vip' || profile?.role === 'admin'
+  const needsVIP = article.is_premium && !isVIP
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-8">
-        <Link href="/" className="hover:text-gray-900">首页</Link>
-        <span>/</span>
-        <Link href="/articles" className="hover:text-gray-900">文章</Link>
-        <span>/</span>
-        <span className="text-gray-900">详情</span>
+      <div className="mb-6">
+        <Link href="/articles" className="text-sm text-blue-600 hover:underline">
+          ← 返回文章列表
+        </Link>
       </div>
 
       {/* Article Header */}
-      <div className="mb-10">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="tag bg-blue-100 text-blue-700">{mockArticle.category}</span>
-          <span className="text-sm text-gray-400">{mockArticle.readTime}</span>
-          <time className="text-sm text-gray-400">{mockArticle.date}</time>
+      <header className="mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="tag text-sm bg-blue-100 text-blue-700">{article.category}</span>
+          {article.is_premium && (
+            <span className="tag text-sm bg-yellow-100 text-yellow-700">⭐ VIP 专享</span>
+          )}
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-4">
-          {mockArticle.title}
-        </h1>
-        <div className="flex flex-wrap gap-1">
-          {mockArticle.tags.map((t) => (
-            <span key={t} className="tag bg-gray-100 text-gray-600">{t}</span>
-          ))}
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">{article.title}</h1>
+        <div className="flex items-center gap-4 text-sm text-gray-500">
+          <span>{article.author?.display_name || '易牧'}</span>
+          <span>·</span>
+          <span>{new Date(article.created_at).toLocaleDateString('zh-CN')}</span>
         </div>
-      </div>
+      </header>
 
-      {/* Article Content */}
-      <div className="prose prose-lg max-w-none">
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-8">
-          <p className="text-amber-800 text-sm font-medium">📝 内容建设中</p>
-          <p className="text-amber-700 text-sm mt-1">
-            这篇文章的完整内容正在整理中。配套课程视频已上线，可前往
-            <Link href="/courses" className="underline ml-1">课程页面</Link>观看。
+      {/* Content */}
+      {needsVIP ? (
+        <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl border border-yellow-200 p-8 text-center">
+          <div className="text-5xl mb-4">🔒</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">VIP 专享内容</h2>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            这篇文章是 VIP 会员专享内容。升级 VIP 即可解锁全部高级教程、课程和资料。
           </p>
+          <div className="flex gap-3 justify-center">
+            <Link
+              href="/auth/login"
+              className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+            >
+              登录已有账号
+            </Link>
+            <Link
+              href="/vip"
+              className="px-6 py-2.5 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 transition"
+            >
+              升级 VIP
+            </Link>
+          </div>
+          {/* Show excerpt for non-VIP */}
+          <div className="mt-8 p-6 bg-white rounded-xl border border-gray-100 text-left">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">内容预览</p>
+            <p className="text-gray-600">{article.excerpt}</p>
+          </div>
         </div>
-        <p className="text-gray-700 leading-relaxed">{mockArticle.content}</p>
-      </div>
+      ) : (
+        <article className="prose prose-lg max-w-none">
+          <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+            {article.content || article.excerpt || '文章内容加载中...'}
+          </div>
+        </article>
+      )}
 
-      {/* Navigation */}
-      <div className="border-t border-gray-100 mt-12 pt-8 flex items-center justify-between">
-        <Link href="/articles" className="text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-          ← 返回文章列表
-        </Link>
-        <Link href="/courses" className="text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-          查看配套课程 →
-        </Link>
-      </div>
+      {/* Tags */}
+      {article.tags && article.tags.length > 0 && (
+        <div className="mt-10 pt-6 border-t border-gray-100">
+          <div className="flex flex-wrap gap-2">
+            {article.tags.map((tag: string) => (
+              <span key={tag} className="tag bg-gray-100 text-gray-600">{tag}</span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

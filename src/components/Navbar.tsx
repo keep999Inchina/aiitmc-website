@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { useAuth } from '@/lib/auth/context'
+import UserMenu from '@/components/auth/UserMenu'
 
 const navItems = [
   { href: '/articles',     label: '文章',     icon: '📝' },
@@ -16,6 +18,7 @@ const navItems = [
 export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const { user, isLoading } = useAuth()
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
@@ -48,20 +51,42 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right: Contact */}
+          {/* Right: Auth */}
           <div className="hidden md:flex items-center gap-3">
-            <a
-              href="mailto:contact@aiitmc.online"
-              className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              联系
-            </a>
-            <Link
-              href="/labs"
-              className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
-              了解实训平台
-            </Link>
+            {isLoading ? (
+              <div className="w-20 h-8 bg-gray-100 rounded-lg animate-pulse" />
+            ) : user ? (
+              <>
+                <a
+                  href="mailto:contact@aiitmc.online"
+                  className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+                >
+                  联系
+                </a>
+                <UserMenu user={user} />
+              </>
+            ) : (
+              <>
+                <a
+                  href="mailto:contact@aiitmc.online"
+                  className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+                >
+                  联系
+                </a>
+                <Link
+                  href="/auth/login"
+                  className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+                >
+                  登录
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  注册
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -103,13 +128,28 @@ export default function Navbar() {
             )
           })}
           <div className="pt-2 border-t border-gray-100">
-            <Link
-              href="/labs"
-              className="block bg-primary-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg text-center"
-              onClick={() => setMenuOpen(false)}
-            >
-              了解实训平台
-            </Link>
+            {user ? (
+              <div className="flex items-center justify-between">
+                <UserMenu user={user} />
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Link
+                  href="/auth/login"
+                  className="flex-1 bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2.5 rounded-lg text-center"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  登录
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="flex-1 bg-primary-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg text-center"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  注册
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}

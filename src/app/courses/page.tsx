@@ -1,73 +1,13 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { getCourses } from '@/lib/db/courses'
+import { isSupabaseConfigured } from '@/lib/supabase/config'
+import { fallbackCourses } from '@/lib/db/fallback-data'
 
 export const metadata: Metadata = {
   title: '在线课程',
   description: '智能制造工程系列课程：PLC、数字孪生、AI赋能MCU开发',
 }
-
-const courses = [
-  {
-    slug: 'plc-s7-1200-complete',
-    title: 'S7-1200 PLC 编程与应用完整课程',
-    description: '从基础梯形图到高级编程，涵盖定时器/计数器/通信/PID/SCL，配套25个实验，每节课附练习题。',
-    level: '初学到进阶',
-    lessons: 42,
-    duration: '约36小时',
-    icon: '🔧',
-    color: 'from-blue-500 to-blue-700',
-    tags: ['S7-1200', 'TIA Portal', 'PID', 'SCL', 'Modbus'],
-    status: 'available',
-  },
-  {
-    slug: 'digital-twin-fundamentals',
-    title: '数字孪生技术基础与实践',
-    description: '理解数字孪生核心概念，动手搭建虚实融合的工厂仿真系统，对接真实设备数据，包含Unity3D实战。',
-    level: '中级',
-    lessons: 28,
-    duration: '约24小时',
-    icon: '🏭',
-    color: 'from-emerald-500 to-emerald-700',
-    tags: ['Unity3D', 'OPC UA', '数字孪生', '仿真'],
-    status: 'available',
-  },
-  {
-    slug: 'ai-mcu-esp32',
-    title: 'AI赋能MCU开发：ESP32-S3 全实战',
-    description: '14个外设模块、43项实验，从传感器采集到边缘AI推理，全程配套 AI-Edge32 Pro 硬件套件。',
-    level: '中级',
-    lessons: 35,
-    duration: '约30小时',
-    icon: '🤖',
-    color: 'from-violet-500 to-violet-700',
-    tags: ['ESP32-S3', 'Arduino', 'AI推理', 'Modbus'],
-    status: 'available',
-  },
-  {
-    slug: 'industrial-iot-platform',
-    title: '工业物联网平台开发实战',
-    description: 'MQTT协议 + Node-RED + Grafana，搭建生产环境可用的工业数据采集与可视化平台。',
-    level: '进阶',
-    lessons: 20,
-    duration: '约18小时',
-    icon: '🌐',
-    color: 'from-orange-500 to-orange-700',
-    tags: ['MQTT', 'Node-RED', 'Grafana', 'EMQ X'],
-    status: 'coming_soon',
-  },
-  {
-    slug: 'math-intuition-k12',
-    title: '直觉式数学：小学到高中全阶段',
-    description: '打破死记硬背，用直觉和连接理解数学。从整数到微积分，每个概念都有"为什么这样"的解释。',
-    level: '通识',
-    lessons: 50,
-    duration: '约45小时',
-    icon: '🔢',
-    color: 'from-amber-500 to-amber-700',
-    tags: ['数学', '直觉学习', '教育改革'],
-    status: 'coming_soon',
-  },
-]
 
 const levelColors: Record<string, string> = {
   '初学到进阶': 'bg-green-100 text-green-700',
@@ -76,7 +16,11 @@ const levelColors: Record<string, string> = {
   '通识': 'bg-amber-100 text-amber-700',
 }
 
-export default function CoursesPage() {
+export default async function CoursesPage() {
+  const courses = isSupabaseConfigured()
+    ? await getCourses({ published: true })
+    : fallbackCourses
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
@@ -97,12 +41,17 @@ export default function CoursesPage() {
                   即将上线
                 </div>
               )}
+              {course.is_premium && (
+                <div className="absolute top-3 left-3 bg-amber-500/80 text-white text-xs px-2 py-1 rounded-full">
+                  VIP
+                </div>
+              )}
             </div>
 
             {/* Content */}
             <div className="p-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className={`tag ${levelColors[course.level] || 'bg-gray-100 text-gray-700'}`}>
+                <span className={`tag ${levelColors[course.level || ''] || 'bg-gray-100 text-gray-700'}`}>
                   {course.level}
                 </span>
                 <span className="text-xs text-gray-400">{course.lessons} 节 · {course.duration}</span>
@@ -115,11 +64,13 @@ export default function CoursesPage() {
                 {course.description}
               </p>
 
-              <div className="flex flex-wrap gap-1 mb-5">
-                {course.tags.map((t) => (
-                  <span key={t} className="tag bg-gray-100 text-gray-600 text-xs">{t}</span>
-                ))}
-              </div>
+              {course.tags && course.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-5">
+                  {course.tags.map((t: string) => (
+                    <span key={t} className="tag bg-gray-100 text-gray-600 text-xs">{t}</span>
+                  ))}
+                </div>
+              )}
 
               {course.status === 'available' ? (
                 <Link
